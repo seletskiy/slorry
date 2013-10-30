@@ -26,7 +26,6 @@ func (s Symbol) Match(features FeatureSet, used FeatureSet) (float64, FeatureSet
     max := 0.0
     //fmt.Printf("S %s\n", s.Char)
     for x := range permutations {
-        //fmt.Printf("P %s\n", x)
         if len(x) == 0 {
             break
         }
@@ -38,7 +37,6 @@ func (s Symbol) Match(features FeatureSet, used FeatureSet) (float64, FeatureSet
             if ok {
                 weight += 1.0
             }
-            //fmt.Printf("%t\n", ok)
 
             for _, f := range used {
                 if f == x[link.A] || f == x[link.B] {
