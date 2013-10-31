@@ -1,6 +1,6 @@
 package align
 
-import . "features"
+import . "slorry/kpch/features"
 
 type Align struct {
     Match func(*ConcreteFeature, *ConcreteFeature) bool

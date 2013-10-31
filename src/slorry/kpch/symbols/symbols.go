@@ -1,12 +1,11 @@
 package symbols
 
-import . "features"
-import . "features/align"
 import "fmt"
 
-var _ = fmt.Print
+import . "slorry/kpch/features"
+import . "slorry/kpch/features/align"
 
-type FeatureSet []*ConcreteFeature
+var _ = fmt.Print
 
 type Symbol struct {
     Char string
@@ -61,11 +60,6 @@ func Perms(features FeatureSet, anchors []*Feature,
         
         copy(packet, result)
 
-        //fmt.Printf("===\n")
-        //for _, x := range result {
-        //    fmt.Printf("%s (%d, %d)\n", x.Origin.Id, x.X, x.Y)
-        //}
-
         out <- packet
 
         return true
@@ -77,9 +71,7 @@ func Perms(features FeatureSet, anchors []*Feature,
 
     anchor := anchors[0]
     for i, f := range features {
-        //fmt.Printf("%s ? %s\n", f.Origin.Id, anchor.Id)
         if f.Origin.Id == anchor.Id {
-            //fmt.Printf("%s = %s (%d, %d)\n", f.Origin.Id, anchor.Id, f.X, f.Y)
             rest := features[i:]
             proceed := Perms(
                 append(rest, features[:i]...), anchors[1:],

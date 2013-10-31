@@ -1,9 +1,9 @@
 package maps
 
-import . "features"
-import . "features/align"
-import . "features/masks"
-import . "symbols"
+import . "slorry/kpch/features"
+import . "slorry/kpch/features/align"
+import . "slorry/kpch/features/patterns"
+import . "slorry/kpch/symbols"
 
 var Zero = Symbol {
     Char: "0",
@@ -70,15 +70,17 @@ var Three = Symbol {
     Char: "3",
     AlignMap: AlignMap {
         []*Feature {
-            &CornerRightTop,
+            &Pad,
             &ArcTopRight,
             &CaveLeftBig,
+            &Cornice,
         },
         []AlignLink {
             {0, 1, &Above},
             {1, 2, &Above},
             {2, 1, &LeftOf},
-            {2, 0, &LeftOf},
+            {3, 0, &LeftOf},
+            {3, 2, &Above},
         },
     },
 }
@@ -90,12 +92,18 @@ var Four = Symbol {
             &CornerRightTop,
             &DescentLeft,
             &BridgeLeft,
+            &CornerRightTop,
         },
         []AlignLink {
             {0, 1, &RightOf},
             {0, 2, &LeftOf},
             {0, 2, &SurelyAbove},
             {1, 2, &SurelyAbove},
+            {3, 0, &SurelyUnder},
+            {3, 1, &SurelyUnder},
+            {3, 2, &Under},
+            {3, 0, &LeftOf},
+            {3, 2, &LeftOf},
         },
     },
 }
@@ -127,6 +135,7 @@ var Six = Symbol {
             &ArcTopRight,
             &CornerRightTop,
             &MediumHole,
+            &NotchTop,
         },
         []AlignLink {
             {0, 1, &LeftOf},
@@ -138,6 +147,9 @@ var Six = Symbol {
             {3, 0, &RightOf},
             {1, 3, &RightOf},
             {2, 3, &SurelyAbove},
+            {4, 0, &RightOf},
+            {4, 1, &LeftOf},
+            {4, 2, &Under},
         },
     },
 }

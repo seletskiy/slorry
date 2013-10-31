@@ -2,7 +2,11 @@ package features
 
 import . "image"
 
+import "image/color"
+
 type FeatureMask []string
+
+type FeatureSet []*ConcreteFeature
 
 type Feature struct {
     Id string
@@ -50,11 +54,11 @@ func MatchMask(mask FeatureMask, img Image, x int, y int) *ConcreteFeature {
                 symbol = mask[i][j]
             }
 
-            r, g, b, _ := img.At(dx, dy).RGBA()
+            sat := img.At(dx, dy).(color.Gray).Y
 
             if dx < 0 || dy < 0 || dx > bounds.Dx() || dy > bounds.Dy() {
                 return nil
-            } else if r + g + b != 0 {
+            } else if sat >= 215 {
                 return nil
             }
         }

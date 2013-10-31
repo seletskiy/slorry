@@ -1,6 +1,6 @@
-package masks
+package patterns
 
-import . "features"
+import . "slorry/kpch/features"
 
 var PipeLeft = Feature {
     Id: `PipeLeft`,
@@ -179,6 +179,13 @@ var DescentLeft = Feature {
             `.      `,
             `.      `,
         },
+        {
+            `   ----`,
+            `  N    `,
+            ` .     `,
+            ` .     `,
+            `.      `,
+        },
     },
 }
 
@@ -259,8 +266,6 @@ var DescentLeftLong = Feature {
     Variants: []FeatureMask {
         {
             `   .`,
-            `   .`,
-            `   .`,
             `  . `,
             `  R `,
             `  . `,
@@ -323,6 +328,82 @@ var Pad = Feature {
     Variants: []FeatureMask {
         {
             `----U----`,
+        },
+    },
+}
+
+var Cornice = Feature {
+    Id: `Cornice`,
+    Variants: []FeatureMask {
+        {
+            `.    `,
+            `...V `,
+            `  .  `,
+            `  .  `,
+            `  ...`,
+        },
+        {
+            `.     `,
+            ` ...V `,
+            `   .  `,
+            `   .  `,
+            `  .   `,
+            `  ....`,
+        },
+        {
+            `.    `,
+            `..V  `,
+            `  .  `,
+            ` .   `,
+            ` .   `,
+            ` ....`,
+        },
+        {
+            `.     `,
+            ` ..V  `,
+            `   .  `,
+            `  .   `,
+            `  .   `,
+            `  ....`,
+        },
+        {
+            `.    `,
+            `..V  `,
+            `  .  `,
+            `..   `,
+            `.    `,
+            `j....`,
+        },
+        {
+            `.    `,
+            `...V `,
+            `     `,
+            `  .  `,
+            `  ...`,
+        },
+    },
+}
+
+var NotchTop = Feature {
+    Id: `NotchTop`,
+    Variants: []FeatureMask {
+        {
+            `  .  `,
+            ` .   `,
+            ` .   `,
+            `N..  `,
+            `   ..`,
+            `    .`,
+            `     `,
+        },
+        {
+            `  .  `,
+            `  .  `,
+            ` .   `,
+            ` N.  `,
+            `   ..`,
+            `    .`,
+            `     `,
         },
     },
 }
