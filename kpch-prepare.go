@@ -5,7 +5,7 @@ import "log"
 import "fmt"
 import "path/filepath"
 import "image"
-//import "image/color"
+import "image/color"
 import "image/png"
 
 func ProcessFile(path string, info os.FileInfo, err error) error {
@@ -29,12 +29,10 @@ func ProcessFile(path string, info os.FileInfo, err error) error {
 
     dst := image.NewGray(image.Rect(0, 0, bounds.Dx() / 2, bounds.Dy() / 2))
 
-    _ = dst
-
     for y := 0; y < bounds.Dy() - 1; y += 1 {
         for x := 0; x < bounds.Dx() - 1; x += 1 {
-            r, _, _, _ := img.At(x, y).RGBA()
-            if r == 0 {
+            sat := dst.ColorModel().Convert(img.At(x, y)).(color.Gray).Y
+            if sat < 210 {
                 fmt.Print("X")
             } else {
                 fmt.Print(" ")

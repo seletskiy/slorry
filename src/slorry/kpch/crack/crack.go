@@ -1,16 +1,14 @@
 package crack
 
-import . "image"
-import "image/color"
 import "fmt"
+import "log"
+import "image"
+import "image/color"
 
 import . "slorry/kpch/symbols"
 import . "slorry/kpch/symbols/maps"
 import . "slorry/kpch/features"
 import . "slorry/kpch/features/patterns"
-
-var _ = fmt.Print
-var debug = false
 
 type SymbolMatch struct {
     Sym Symbol
@@ -18,17 +16,15 @@ type SymbolMatch struct {
 }
 
 
-func Sharpify(img Image) *Gray {
+func Sharpify(img image.Image) *image.Gray {
     bounds := img.Bounds()
     dx := bounds.Dx()
     dy := bounds.Dy()
 
-    gray := NewGray(bounds)
+    gray := image.NewGray(bounds)
 
     for y := 0; y < dy; y++ {
         for x := 0; x < dx; x++ {
-            sat := int(gray.ColorModel().Convert(img.At(x, y)).(color.Gray).Y)
-
             if x == 0 || y == 0 || y == dy - 1 || x == dx - 1 {
                 gray.Set(x, y, color.Gray{255})
                 continue
@@ -37,7 +33,11 @@ func Sharpify(img Image) *Gray {
             weight := 0
             for i := -1; i <= 1; i += 1 {
                 for j := -1; j <= 1; j += 1 {
-                    if i + j == 0 {
+                    col := img.At(x + j, y + i)
+                    sat := int(gray.ColorModel().Convert(col).(color.Gray).Y)
+                    sat = 255 - sat
+
+                    if i == 0 && j == 0 {
                         weight += 9 * sat
                     } else {
                         weight -= sat
@@ -45,20 +45,24 @@ func Sharpify(img Image) *Gray {
                 }
             }
 
-            if weight < -1 {
-                weight = 0
-            } else if weight > 255 {
-                weight = 255
+            pix := 0
+
+            if weight < 0 {
+                pix = 255
+            } else if weight >= 150 {
+                pix = 0
+            } else {
+                pix = 255
             }
 
-            gray.Set(x, y, color.Gray{uint8(sat)})
+            gray.Set(x, y, color.Gray{uint8(pix)})
         }
     }
 
     return gray
 }
 
-func FindFeatures(img Image, x int, y int) FeatureSet {
+func FindFeatures(img image.Image, x int, y int) FeatureSet {
     features := []*Feature {
         &PipeLeft,
         &PipeRight,
@@ -79,6 +83,7 @@ func FindFeatures(img Image, x int, y int) FeatureSet {
         &Pad,
         &Cornice,
         &NotchTop,
+        &NotchBottom,
     }
 
     result := make(FeatureSet, 0)
@@ -93,7 +98,7 @@ func FindFeatures(img Image, x int, y int) FeatureSet {
     return result
 }
 
-func FindAllFeatures(img Image) FeatureSet {
+func FindAllFeatures(img image.Image) FeatureSet {
     dx := img.Bounds().Dx()
     dy := img.Bounds().Dy()
     matches := make(FeatureSet, 0)
@@ -106,15 +111,16 @@ func FindAllFeatures(img Image) FeatureSet {
     return matches
 }
 
-func PrintImage(img Image, features FeatureSet) {
+func PrintImage(img image.Image, features FeatureSet) {
     dx := img.Bounds().Dx()
     dy := img.Bounds().Dy()
     for y := 0; y < dy; y++ {
+        row := ""
         for x := 0; x < dx; x++ {
             printed := false
             for _, m := range features {
                 if m.X == x && m.Y == y {
-                    fmt.Printf("%c", m.Symbol)
+                    row += fmt.Sprintf("%c", m.Symbol)
                     printed = true
                     break
                 }
@@ -126,17 +132,17 @@ func PrintImage(img Image, features FeatureSet) {
 
             sat := img.At(x, y).(color.Gray).Y
             if sat == 0 {
-                fmt.Print(".")
+                row += "."
             } else {
-                fmt.Print(" ")
+                row += " "
             }
         }
 
-        fmt.Println()
+        log.Println(row)
     }
 }
 
-func Chunkify(img Image, features FeatureSet,
+func Chunkify(img image.Image, features FeatureSet,
         count int, overlap int, shift int) []FeatureSet {
     dx := img.Bounds().Dx()
     dy := img.Bounds().Dy()
@@ -161,12 +167,16 @@ func Chunkify(img Image, features FeatureSet,
 
     for chunk := 0; chunk < count; chunk++ {
         windowStart := start + chunk * size - overlap + chunk * shift
-        finish := start + (chunk + 1) * size + overlap + chunk * shift
+        windowEnd := start + (chunk + 1) * size + overlap + chunk * shift
+
+        log.Printf(fmt.Sprintf(
+            fmt.Sprintf("%%%ds%%%ds", windowStart, windowEnd - windowStart),
+            "S", "E"))
 
         window := make(FeatureSet, 0)
 
         for _, f := range features {
-            if f.X >= windowStart && f.X <= finish {
+            if f.X >= windowStart && f.X <= windowEnd {
                 window = append(window, f)
             }
         }
@@ -207,8 +217,11 @@ func FindSymbols(chunks []FeatureSet) []SymbolMatch {
                 matchedSymbol = symbol
                 symbolFeatures = matchedFeatures
             }
+
+            log.Printf("::: %s: %3.2f", symbol.Char, weight)
         }
 
+        log.Printf("=== %s: %3.2f", matchedSymbol.Char, maxWeight)
         result = append(result, SymbolMatch{matchedSymbol, maxWeight})
         usedFeatures = append(usedFeatures, symbolFeatures...)
     }
@@ -216,9 +229,12 @@ func FindSymbols(chunks []FeatureSet) []SymbolMatch {
     return result
 }
 
-func Crack(source Image) []SymbolMatch {
+func Crack(source image.Image) []SymbolMatch {
     img := Sharpify(source)
     features := FindAllFeatures(img)
     chunks := Chunkify(img, features, 5, 4, 1)
+
+    PrintImage(img, features)
+
     return FindSymbols(chunks)
 }

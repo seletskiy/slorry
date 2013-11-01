@@ -1,6 +1,9 @@
 package align
 
+import "log"
 import . "slorry/kpch/features"
+
+var _ = log.Print
 
 type Align struct {
     Match func(*ConcreteFeature, *ConcreteFeature) bool
@@ -15,6 +18,17 @@ var LeftOf = Align {
         }
     },
 }
+
+var SurelyLeftOf = Align {
+    Match: func (i *ConcreteFeature, j *ConcreteFeature) bool {
+        if j.X - i.X >= 5 {
+            return true
+        } else {
+            return false
+        }
+    },
+}
+
 
 var RightOf = Align {
     Match: func (i *ConcreteFeature, j *ConcreteFeature) bool {

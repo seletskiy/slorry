@@ -1,11 +1,11 @@
 package symbols
 
-import "fmt"
+import "log"
 
 import . "slorry/kpch/features"
 import . "slorry/kpch/features/align"
 
-var _ = fmt.Print
+var _ = log.Print
 
 type Symbol struct {
     Char string
@@ -15,74 +15,86 @@ type Symbol struct {
 func (s Symbol) Match(features FeatureSet, used FeatureSet) (float64, FeatureSet) {
     permutations := make(chan FeatureSet)
     go func() {
-        Perms(features, s.AlignMap.Features, make(FeatureSet, 0),
+        Permutations(features, s.AlignMap.Features, make(FeatureSet, 0),
             permutations)
         permutations <- nil
     }()
 
     var matched FeatureSet
 
-    max := 0.0
-    //fmt.Printf("S %s\n", s.Char)
+    maxWeight := 0.0
     for x := range permutations {
         if len(x) == 0 {
             break
         }
 
-        weight := 0.0
+        alignWeight := 0.0
+        featuresWeight := float64(len(x))/ float64(len(s.AlignMap.Features))
 
         for _, link := range s.AlignMap.Aligns {
-            ok := link.Align.Match(x[link.A], x[link.B])
-            if ok {
-                weight += 1.0
+            if link.A >= len(x) {
+                continue
+            }
+
+            if link.B >= len(x) {
+                continue
+            }
+
+            if link.Align.Match(x[link.A], x[link.B]) {
+                alignWeight += 1.0
             }
 
             for _, f := range used {
                 if f == x[link.A] || f == x[link.B] {
-                    weight -= 0.4
+                    alignWeight -= 0.4
                 }
             }
         }
 
-        if weight >= max {
-            max = weight
+        featuresWeight /= float64(len(s.AlignMap.Aligns))
+
+        weight := alignWeight * featuresWeight
+
+        if weight > maxWeight {
+            maxWeight = weight
             matched = x
         }
     }
 
-    return max / float64(len(s.AlignMap.Aligns)), matched
+    return maxWeight, matched
 }
 
-func Perms(features FeatureSet, anchors []*Feature,
-        result FeatureSet, out chan FeatureSet) bool {
-    if len(anchors) == 0 {
+func Permutations(features FeatureSet, anchors []*Feature,
+        result FeatureSet, out chan FeatureSet) {
+    if len(anchors) == 0 || len(features) == 0 {
         packet := make(FeatureSet, len(result))
-        
+
         copy(packet, result)
 
         out <- packet
 
-        return true
+        return
     }
 
-    if len(features) == 0 {
-        return false
-    }
-
-    anchor := anchors[0]
-    for i, f := range features {
-        if f.Origin.Id == anchor.Id {
-            rest := features[i:]
-            proceed := Perms(
-                append(rest, features[:i]...), anchors[1:],
-                append(result, features[i]),
-                out)
-
-            if !proceed {
-                return false
+    for j, anchor := range anchors {
+        //log.Println(j, anchor.Id)
+        found := false
+        for i, f := range features {
+            if f.Origin.Id == anchor.Id {
+                rest := make(FeatureSet, i)
+                copy(rest, features[:i])
+                Permutations(
+                    append(rest, features[i+1:]...), anchors[j+1:],
+                    append(result, f),
+                    out)
+                found = true
             }
+        }
+
+        if found {
+            return
         }
     }
 
-    return true
+    Permutations(nil, nil, result, out)
 }
