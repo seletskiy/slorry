@@ -1,7 +1,6 @@
 package crack
 
 import "fmt"
-import "log"
 import "image"
 import "image/color"
 
@@ -138,7 +137,6 @@ func PrintImage(img image.Image, features FeatureSet) {
             }
         }
 
-        log.Println(row)
     }
 }
 
@@ -168,10 +166,6 @@ func Chunkify(img image.Image, features FeatureSet,
     for chunk := 0; chunk < count; chunk++ {
         windowStart := start + chunk * size - overlap + chunk * shift
         windowEnd := start + (chunk + 1) * size + overlap + chunk * shift
-
-        log.Printf(fmt.Sprintf(
-            fmt.Sprintf("%%%ds%%%ds", windowStart, windowEnd - windowStart),
-            "S", "E"))
 
         window := make(FeatureSet, 0)
 
@@ -218,10 +212,8 @@ func FindSymbols(chunks []FeatureSet) []SymbolMatch {
                 symbolFeatures = matchedFeatures
             }
 
-            log.Printf("::: %s: %3.2f", symbol.Char, weight)
         }
 
-        log.Printf("=== %s: %3.2f", matchedSymbol.Char, maxWeight)
         result = append(result, SymbolMatch{matchedSymbol, maxWeight})
         usedFeatures = append(usedFeatures, symbolFeatures...)
     }
