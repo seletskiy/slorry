@@ -15,21 +15,25 @@ import "slorry/kpch/crack"
 
 
 var CaptchaLinkRe *regexp.Regexp = regexp.MustCompile(
-        `/CaptchaService/CaptchaImage.ashx\?Id=(\d+)`)
+        `/CaptchaService/CaptchaImage.ashx\?ID=(\d+)`)
 
 var TrackTableRe *regexp.Regexp = regexp.MustCompile(
     `(?s)tbl_track_id_info[^>]+>(.*)</table>`)
 
-var TrackTableTr *regexp.Regexp = regexp.MustCompile(
+var TrackTableTrRe *regexp.Regexp = regexp.MustCompile(
     `(?s)<tr.*?>(.*?)</tr>`)
 
-var TrackTableTd *regexp.Regexp = regexp.MustCompile(
+var TrackTableTdRe *regexp.Regexp = regexp.MustCompile(
     `(?s)<td.*?>(.*?)</td>`)
 
 var LineSplitRe *regexp.Regexp = regexp.MustCompile(
     `(.{10})(?: |$)`)
 
+var CaptchaErrorRe *regexp.Regexp = regexp.MustCompile(
+	`CaptchaErrorCodeContainer">([^<]+)`)
+
 var BaseUrl string = "http://www.russianpost.ru"
+var TrackUrl string = BaseUrl + "/tracking/"
 
 type TrackStage struct {
     Name string
@@ -53,8 +57,8 @@ func main() {
     PrintTextTrack(GetTrack(os.Args[1]))
 }
 
-func GetTrack(number string) []*TrackStage {
-    resp, err := http.Get(BaseUrl)
+func TryToBreakCaptcha(number string) string {
+    resp, err := http.Get(TrackUrl)
     if err != nil {
         log.Fatal(err)
     }
@@ -80,11 +84,10 @@ func GetTrack(number string) []*TrackStage {
         captchaCode += sym.Sym.Char
     }
 
-    resp, err = http.PostForm(BaseUrl +
-        "/resp_engine.aspx?Path=rp/servise/ru/home/postuslug/trackingpo",
+    resp, err = http.PostForm(TrackUrl,
         url.Values{
             "CaptchaId": {captchaId},
-            "InputedCaptchaCode": {captchaCode},
+            "CaptchaCode": {captchaCode},
             "BarCode": {strings.ToUpper(number)},
             "searchsign": {"1"},
         })
@@ -94,7 +97,37 @@ func GetTrack(number string) []*TrackStage {
 
     bytes, err = ioutil.ReadAll(resp.Body)
 
-    trackTableMatch := TrackTableRe.FindStringSubmatch(string(bytes))
+	body := string(bytes)
+
+	capchaErrorMatch := CaptchaErrorRe.FindStringSubmatch(body)
+	if len(capchaErrorMatch) > 0 {
+		log.Println("неправильно прочитал капчу")
+		log.Printf("ссылка на капчу: %s", captchaLink)
+		log.Printf("прочитанный код: %s", captchaCode)
+
+		return ""
+	}
+
+	return body
+}
+
+func GetTrack(number string) []*TrackStage {
+	var body string
+
+	for i := 0; i < 5; i++ {
+		body = TryToBreakCaptcha(number)
+		if body != "" {
+			break
+		}
+	}
+
+	if body == "" {
+		log.Fatal("не могу взломать капчу")
+	} else {
+		log.Println("ok, капча разгадана")
+	}
+
+    trackTableMatch := TrackTableRe.FindStringSubmatch(body)
     if len(trackTableMatch) < 1 {
         log.Fatal("отправление не найдено")
     }
@@ -103,8 +136,8 @@ func GetTrack(number string) []*TrackStage {
 
     tracking := make([]*TrackStage, 0)
 
-    for _, tr := range TrackTableTr.FindAllStringSubmatch(trackTable, -1) {
-        tds := TrackTableTd.FindAllStringSubmatch(tr[1], -1)
+    for _, tr := range TrackTableTrRe.FindAllStringSubmatch(trackTable, -1) {
+        tds := TrackTableTdRe.FindAllStringSubmatch(tr[1], -1)
         if len(tds) != 10 {
             continue
         }
