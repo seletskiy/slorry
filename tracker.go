@@ -160,7 +160,7 @@ func GetTrack(number string) []*TrackStage {
                 strings.Replace(tds[7][1], ",", ".", -1), 64)
         }
 
-        date, _ := time.ParseInLocation("02.01.2006 15:04", tds[1][1],
+		date, _ := time.ParseInLocation("02.01.2006 15:04:05", tds[1][1],
             time.Local)
 
         tracking = append(tracking, &TrackStage{
