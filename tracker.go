@@ -46,15 +46,6 @@ type TrackStage struct {
 	NameTarget  string
 }
 
-type cookieJarSuffixList struct{}
-
-func (cookieJarSuffixList) PublicSuffix(domain string) string {
-	return "ru"
-}
-func (cookieJarSuffixList) String() string {
-	return "dniwe"
-}
-
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Printf("Usage: tracker <tracking number>\n")
@@ -92,9 +83,8 @@ func TryToBreakCaptcha(number string) string {
 		captchaCode += sym.Sym.Char
 	}
 
-	var suffixList = cookieJarSuffixList{}
 	jarOpts := cookiejar.Options{
-		PublicSuffixList: suffixList,
+		PublicSuffixList: nil,
 	}
 	jar, err := cookiejar.New(&jarOpts)
 	if err != nil {
