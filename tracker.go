@@ -10,12 +10,9 @@ import "strconv"
 import "io/ioutil"
 import "net/url"
 import "net/http"
+import "net/http/cookiejar"
 import "image/png"
 import "slorry/kpch/crack"
-
-
-var CaptchaLinkRe *regexp.Regexp = regexp.MustCompile(
-        `/CaptchaService/CaptchaImage.ashx\?ID=(\d+)`)
 
 var TrackTableRe *regexp.Regexp = regexp.MustCompile(
     `(?s)tbl_track_id_info[^>]+>(.*)</table>`)
@@ -33,7 +30,8 @@ var CaptchaErrorRe *regexp.Regexp = regexp.MustCompile(
 	`CaptchaErrorCodeContainer">([^<]+)`)
 
 var BaseUrl string = "http://www.russianpost.ru"
-var TrackUrl string = BaseUrl + "/tracking/"
+var TrackUrl string = BaseUrl + "/tracking20"
+var CaptchaUrl string = TrackUrl + "/Code/Code.png.ashx"
 
 type TrackStage struct {
     Name string
@@ -58,6 +56,11 @@ func main() {
 }
 
 func TryToBreakCaptcha(number string) string {
+    u, err := url.Parse(TrackUrl)
+    if err != nil {
+        log.Fatal(err)
+    }
+
     resp, err := http.Get(TrackUrl)
     if err != nil {
         log.Fatal(err)
@@ -68,11 +71,7 @@ func TryToBreakCaptcha(number string) string {
         log.Fatal(err)
     }
 
-    captchaInfo := CaptchaLinkRe.FindSubmatch(bytes)
-    captchaLink := string(captchaInfo[0])
-    captchaId := string(captchaInfo[1])
-
-    resp, err = http.Get(BaseUrl + captchaLink)
+    resp, err = http.Get(CaptchaUrl)
     if err != nil {
         log.Fatal(err)
     }
@@ -84,9 +83,18 @@ func TryToBreakCaptcha(number string) string {
         captchaCode += sym.Sym.Char
     }
 
-    resp, err = http.PostForm(TrackUrl,
+    jarOpts := cookiejar.Options{
+        PublicSuffixList: nil,
+    }
+    jar, err := cookiejar.New(&jarOpts)
+    if err != nil {
+        log.Fatal(err)
+    }
+    jar.SetCookies(u, resp.Cookies())
+
+    c := &http.Client{Jar: jar}
+    resp, err = c.PostForm(TrackUrl,
         url.Values{
-            "CaptchaId": {captchaId},
             "CaptchaCode": {captchaCode},
             "BarCode": {strings.ToUpper(number)},
             "searchsign": {"1"},
@@ -102,7 +110,7 @@ func TryToBreakCaptcha(number string) string {
 	capchaErrorMatch := CaptchaErrorRe.FindStringSubmatch(body)
 	if len(capchaErrorMatch) > 0 {
 		log.Println("неправильно прочитал капчу")
-		log.Printf("ссылка на капчу: %s", captchaLink)
+		log.Printf("ссылка на капчу: %s", CaptchaUrl)
 		log.Printf("прочитанный код: %s", captchaCode)
 
 		return ""
